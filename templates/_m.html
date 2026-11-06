@@ -1,0 +1,2 @@
+{% macro av(name, id, cls='') %}<span class="av c{{ id % 6 }} {{ cls }}">{{ name|initials }}</span>{% endmacro %}
+{% macro chip(kind) %}<span class="chip {{ kind|lower }}">{{ kind }}</span>{% endmacro %}

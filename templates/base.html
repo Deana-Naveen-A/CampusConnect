@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CampusConnect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head><body>
+<header class="top"><div class="wrap bar">
+  <a class="logo" href="/"><span class="mark">CC</span>CampusConnect</a>
+  <nav>{% set p = request.path %}{% if viewer %}
+    <a href="/" class="{{ 'on' if p == '/' }}">Feed</a>
+    <a href="/people" class="{{ 'on' if p == '/people' }}">People</a>
+    <a href="/jobs" class="{{ 'on' if p == '/jobs' }}">Jobs</a>
+    {% if viewer.is_admin %}<a href="/reports" class="{{ 'on' if p == '/reports' }}">Reports</a>{% endif %}{% endif %}
+  </nav>
+  <div class="who">{% if viewer %}<span>{{ viewer.name }}{% if viewer.is_admin %} · admin{% endif %}</span><a href="/logout">Log out</a>
+    {% else %}<a href="/login">Log in</a><a class="btn" href="/signup">Sign up</a>{% endif %}</div>
+</div></header>
+{% with m = get_flashed_messages() %}{% if m %}<div class="wrap"><div class="note">{{ m[0] }}</div></div>{% endif %}{% endwith %}
+<main class="wrap">{% block body %}{% endblock %}</main>
+{% block scripts %}{% endblock %}
+</body></html>

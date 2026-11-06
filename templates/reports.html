@@ -1,0 +1,65 @@
+{% extends "base.html" %}{% from "_m.html" import chip %}
+{% block body %}
+<div class="phead"><div><h1>Network intelligence</h1><p class="muted">Graph reports computed live in Neo4j from the CampusConnect network.</p></div>
+  <form method="post" action="/sync"><button class="ghost">Rebuild graph from MySQL</button></form></div>
+{% if err %}
+<div class="card warn"><h3>Neo4j is not reachable or not loaded</h3><p>{{ err }}</p>
+  <p class="muted">Start it with <code>docker start cc-neo4j</code>, then run <code>python seed_neo4j.py</code>.</p></div>
+{% else %}
+<div class="kpis">
+  <div class="card kpi"><b>{{ stats.users }}</b><span>People</span></div>
+  <div class="card kpi"><b>{{ stats.links }}</b><span>Connections</span></div>
+  <div class="card kpi"><b>{{ ((2 * stats.links / stats.users)|round(1)) if stats.users else 0 }}</b><span>Avg. connections</span></div>
+  <div class="card kpi"><b>{{ stats.isolated }}</b><span>Not connected yet</span></div>
+  <div class="card kpi"><b>{{ (homo.same_school * 100 / homo.total)|round|int if homo.total else 0 }}%</b><span>Links within same school</span></div>
+</div>
+
+<div class="card"><div class="ch"><h3>Network explorer</h3>{{ chip('Neo4j') }}<span class="sp"></span>
+  <select id="gu">{% for u in plist %}<option value="{{ u.user_id }}" {{ 'selected' if u.user_id == uid }}>{{ u.name }}</option>{% endfor %}</select>
+  <select id="gd"><option value="1">1st degree</option><option value="2" selected>Up to 2nd degree</option><option value="3">Up to 3rd degree</option></select>
+  <button class="btn" onclick="draw()">Show</button></div>
+  <div id="net"></div><p class="muted small">Colour = school. Drag nodes, scroll to zoom, hover for details.</p></div>
+
+<div class="grid2">
+  <div class="card"><div class="ch"><h3>Degrees of separation</h3>{{ chip('Neo4j') }}</div>
+    <form class="inl" method="get"><input type="hidden" name="u" value="{{ uid }}"><select name="a">{% for u in plist %}<option value="{{ u.user_id }}" {{ 'selected' if u.user_id == a }}>{{ u.name }}</option>{% endfor %}</select>
+      <span>to</span><select name="b">{% for u in plist %}<option value="{{ u.user_id }}" {{ 'selected' if u.user_id == b }}>{{ u.name }}</option>{% endfor %}</select><button class="btn">Find path</button></form>
+    {% if path %}<div class="path">{% for n in path[0].names %}<span class="node">{{ n }}</span>{% if not loop.last %}<span class="arrow">→</span>{% endif %}{% endfor %}</div>
+      <p><b>{{ path[0].hops }}</b> hop{{ 's' if path[0].hops != 1 }} apart</p>
+    {% else %}<p class="muted">{{ 'Pick two different people.' if a == b else 'No path found between these two people.' }}</p>{% endif %}
+    <details><summary>View Cypher</summary><pre>{{ Q.path }}</pre></details></div>
+
+  <div class="card"><div class="ch"><h3>Top connectors</h3>{{ chip('Neo4j') }}</div>
+    {% for r in top %}<div class="brow"><span>{{ r.name }}<small>{{ r.headline }}</small></span><div class="bar2"><i style="width:{{ r.degree * 100 / maxdeg }}%"></i></div><b>{{ r.degree }}</b></div>{% endfor %}
+    <details><summary>View Cypher</summary><pre>{{ Q.top }}</pre></details></div>
+
+  <div class="card wide"><div class="ch"><h3>Suggested connections</h3>{{ chip('Neo4j') }}<span class="sp"></span><form class="inl" method="get" style="margin:0"><input type="hidden" name="a" value="{{ a }}"><input type="hidden" name="b" value="{{ b }}"><select name="u" onchange="this.form.submit()">{% for u in plist %}<option value="{{ u.user_id }}" {{ 'selected' if u.user_id == uid }}>{{ u.name }}</option>{% endfor %}</select></form></div>
+    <table><tr><th>Person</th><th>Mutual (via)</th><th>Shared skills</th><th>Same school</th><th>Score</th></tr>
+    {% for r in pymk %}<tr><td><b>{{ r.name }}</b><small>{{ r.headline }}</small></td><td>{{ r.mutual }} <small>{{ r.via|join(', ') }}</small></td><td>{{ r.shared }}</td><td>{{ 'Yes' if r.same else '—' }}</td><td><b>{{ r.score }}</b></td></tr>
+    {% else %}<tr><td colspan="5" class="muted">No second-degree suggestions.</td></tr>{% endfor %}</table>
+    <p class="muted small">Score = 3 × mutual connections + shared skills + 2 if same school.</p>
+    <details><summary>View Cypher</summary><pre>{{ Q.pymk }}</pre></details></div>
+
+  <div class="card"><div class="ch"><h3>Talent flow between companies</h3>{{ chip('Neo4j') }}</div>
+    {% for r in flow %}<div class="trend"><span>{{ r.a }} ↔ {{ r.b }}<small>{{ r.who|join(', ') }}</small></span><b>{{ r.people }}</b></div>
+    {% else %}<p class="muted">No people with experience at two companies.</p>{% endfor %}
+    <details><summary>View Cypher</summary><pre>{{ Q.flow }}</pre></details></div>
+
+  <div class="card"><div class="ch"><h3>Skills that go together</h3>{{ chip('Neo4j') }}</div>
+    {% for r in pairs %}<div class="trend"><span>{{ r.x }} + {{ r.y }}</span><b>{{ r.people }} people</b></div>{% endfor %}
+    <details><summary>View Cypher</summary><pre>{{ Q.pairs }}</pre></details></div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if not err %}
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<script>
+function draw() {
+  fetch(`/api/graph?uid=${document.getElementById('gu').value}&depth=${document.getElementById('gd').value}`)
+    .then(r => r.json()).then(g => new vis.Network(document.getElementById('net'),
+      { nodes: new vis.DataSet(g.nodes), edges: new vis.DataSet(g.edges) },
+      { nodes: { shape: 'dot', size: 14, font: { size: 13 } }, edges: { color: { color: '#c5cfdd' }, smooth: false },
+        physics: { barnesHut: { gravitationalConstant: -3500 } }, interaction: { hover: true } }));
+}
+draw();
+</script>{% endif %}{% endblock %}

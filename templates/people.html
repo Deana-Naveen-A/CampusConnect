@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "_m.html" import av, chip %}
+{% block body %}
+<div class="phead"><div><h1>People</h1><p class="muted">Find people and grow your network. {{ chip('MySQL') }}</p></div>
+  <form class="inl" method="get"><input name="q" value="{{ q }}" placeholder="Search name or headline"><button class="btn">Search</button></form></div>
+{% if incoming %}<div class="card"><h4>Connection requests</h4>
+  {% for p in incoming %}<div class="sug">{{ av(p.name, p.user_id) }}<div><b>{{ p.name }}</b><small>{{ p.headline }}</small></div><span class="sp"></span>
+    <form method="post" action="/respond/{{ p.user_id }}/accept"><button class="btn">Accept</button></form>
+    <form method="post" action="/respond/{{ p.user_id }}/decline"><button class="ghost">Decline</button></form></div>{% endfor %}</div>{% endif %}
+<div class="grid2">
+{% for p in people %}<div class="card pc">{{ av(p.name, p.user_id) }}<div><b>{{ p.name }}</b><small>{{ p.headline }}{% if p.location %} · {{ p.location }}{% endif %}</small></div><span class="sp"></span>
+  {% if p.rel == 'connected' %}<span class="badge">Connected</span>
+  {% elif p.rel == 'sent' %}<span class="badge pend">Requested</span>
+  {% elif p.rel == 'incoming' %}<span class="badge pend">Wants to connect</span>
+  {% elif p.rel == '' %}<form method="post" action="/connect/{{ p.user_id }}"><button class="btn">Connect</button></form>{% endif %}</div>
+{% else %}<div class="card empty">No one found yet.</div>{% endfor %}
+</div>
+{% endblock %}

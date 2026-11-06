@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% from "_m.html" import av, chip %}
+{% block body %}
+<div class="grid3">
+  <aside>
+    <div class="card prof"><div class="cover"></div>{{ av(me.name, me.user_id, 'lg') }}
+      <h3>{{ me.name }}</h3><p class="muted">{{ me.headline }}</p>
+      <div class="stat"><b>{{ nconn }}</b> connections</div></div>
+  </aside>
+  <section>
+    <form class="card compose" method="post" action="/post">
+      <textarea name="content" placeholder="Share an update with your network… use #hashtags" required></textarea>
+      <div class="row">{{ chip('Redis') }}<button class="btn">Post</button></div>
+    </form>
+    {% for p in posts %}
+    <article class="card post">
+      <div class="ph">{{ av(p.author.name, p.author.user_id) }}
+        <div><b>{{ p.author.name }}</b><small>{{ p.author.headline }} · {{ p.at|ago }}</small></div></div>
+      <p>{{ p.content }}</p>
+      <div class="meta">{{ p.likes }} likes · {{ p.comments|length }} comments</div>
+      <form method="post" action="/like/{{ p.id }}"><button class="ghost {{ 'liked' if p.liked }}">{{ 'Liked' if p.liked else 'Like' }}</button></form>
+      {% for c in p.comments[-3:] %}<div class="cmt">{{ av(c.who.name, c.who.user_id, 'sm') }}<div><b>{{ c.who.name }}</b> {{ c.text }}</div></div>{% endfor %}
+      <form class="cform" method="post" action="/comment/{{ p.id }}"><input name="text" placeholder="Add a comment…" required><button class="ghost">Reply</button></form>
+    </article>
+    {% else %}<div class="card empty">Nothing here yet. Connect with people or write the first post.</div>{% endfor %}
+  </section>
+  <aside>
+    <div class="card"><h4>Trending {{ chip('Redis') }}</h4>
+      {% for t, n in tags %}<div class="trend"><span>#{{ t }}</span><small>{{ n }} posts</small></div>{% endfor %}</div>
+    <div class="card"><h4>People you may know {{ chip('Neo4j') }}</h4>
+      {% if pymk is none %}<p class="muted">Start Neo4j to see suggestions.</p>
+      {% else %}{% for s in pymk %}<div class="sug">{{ av(s.name, s.id) }}<div><b>{{ s.name }}</b><small>{{ s.mutual }} mutual · {{ s.headline }}</small></div></div>
+      {% else %}<p class="muted">No suggestions yet. <a href="/people">Find people</a> to connect with.</p>{% endfor %}{% endif %}</div>
+  </aside>
+</div>
+{% endblock %}

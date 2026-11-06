@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Path to an alumnus</h1>
+<p class="muted">Finds the shortest chain of accepted connections from a person to any alumnus at a company.</p>
+<form method="get" class="box row">
+  <select name="src" aria-label="From">
+    {% for u in all_users %}<option value="{{ u.user_id }}" {{ 'selected' if u.user_id == (src or me.user_id) }}>{{ u.name }}</option>{% endfor %}
+  </select>
+  <select name="company" aria-label="Company">
+    {% for c in companies %}<option {{ 'selected' if c == company }}>{{ c }}</option>{% endfor %}
+  </select>
+  <button>Find path</button>
+</form>
+{% if result %}
+  {% if result.hops %}
+  <div class="box"><p>{{ result.hops }} hop(s). Ask the person before the last name for an introduction.</p>
+    <div class="chain">
+    {% for p in result.chain %}<a href="/profile/{{ p.id }}"><b>{{ p.name }}</b></a>{% if not loop.last %}<span class="arrow">connected to</span>{% endif %}{% endfor %}
+    </div></div>
+  {% else %}<p class="empty">No path found within 6 hops. Try connecting with more people.</p>{% endif %}
+{% endif %}
+{% endblock %}

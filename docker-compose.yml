@@ -1,0 +1,13 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cc-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+  redis:
+    image: redis:7
+    container_name: cc-redis
+    ports:
+      - "6379:6379"

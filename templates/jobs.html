@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% from "_m.html" import chip %}
+{% block body %}
+<div class="phead"><div><h1>Jobs for you</h1><p class="muted">Ranked by how many required skills you already have. {{ chip('MySQL') }}</p></div>
+  <div class="filters"><button class="fchip on" data-t="all">All</button><button class="fchip" data-t="full-time">Full-time</button><button class="fchip" data-t="internship">Internship</button></div></div>
+<div class="grid2">
+{% for j in jobs %}
+<article class="card job" data-type="{{ j.job_type }}">
+  <div class="jh"><div><h3>{{ j.title }}</h3><p class="muted">{{ j.company }} · {{ j.department }} · {{ j.job_type|title }}</p></div><div class="sal">₹{{ j.salary }} LPA</div></div>
+  <div class="match"><div class="mbar"><i style="width:{{ j.pct }}%"></i></div><b>{{ j.pct }}% skill match</b></div>
+  {% if j.missing %}<p class="muted">Missing: {% for m in j.missing.split(', ') %}<span class="tag">{{ m }}</span>{% endfor %}</p>{% endif %}
+  {% if j.job_id in applied %}<span class="badge">{{ applied[j.job_id]|title }}</span>
+  {% else %}<form method="post" action="/apply/{{ j.job_id }}"><button class="btn">Apply</button></form>{% endif %}
+</article>
+{% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll('.fchip').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.fchip').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.job').forEach(j => j.style.display = (b.dataset.t === 'all' || j.dataset.type === b.dataset.t) ? '' : 'none');
+});
+</script>{% endblock %}

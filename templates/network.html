@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Network</h1>
+
+<h2>Connection requests</h2>
+{% for p in incoming %}
+<div class="box"><a href="/profile/{{ p.user_id }}"><b>{{ p.name }}</b></a> <span class="tag">{{ p.user_type }}</span>
+  <form method="post" action="/accept/{{ p.user_id }}" class="inline"><button class="ghost">Accept</button></form></div>
+{% else %}<p class="empty">No pending requests.</p>{% endfor %}
+
+<h2>Your connections</h2>
+{% for f in friends %}
+<div class="box"><a href="/profile/{{ f.user_id }}"><b>{{ f.name }}</b></a> <span class="tag">{{ f.user_type }}</span></div>
+{% else %}<p class="empty">You have no connections yet. Send a request below.</p>{% endfor %}
+
+<h2>People you can connect with</h2>
+<div class="grid">
+{% for p in people %}
+<div class="box"><a href="/profile/{{ p.user_id }}"><b>{{ p.name }}</b></a> <span class="tag">{{ p.user_type }}</span><br>
+  <form method="post" action="/connect/{{ p.user_id }}" class="inline"><button class="ghost">Connect</button></form></div>
+{% endfor %}
+</div>
+{% endblock %}

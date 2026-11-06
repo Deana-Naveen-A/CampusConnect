@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="box">
+  <h1>{{ u.name }} <span class="tag">{{ u.user_type }}</span></h1>
+  <p>{{ u.headline }}</p>
+  <p class="meta">{% if u.dept %}Department: {{ u.dept }}. {% else %}Not affiliated with a department. {% endif %}
+  {% if extra %}{{ extra.label }}: {{ extra.value }}{% endif %}</p>
+</div>
+
+<h2>Skills and endorsements</h2>
+<div class="box">
+<table>
+  <tr><th>Skill</th><th>Endorsements</th><th>Trust score</th><th></th></tr>
+  {% for s in skills %}
+  <tr><td>{{ s.name }}</td><td>{{ s.endorsements }}</td><td>{{ s.trust_score }}</td>
+    <td>{% if u.user_id != me.user_id %}<form method="post" action="/endorse/{{ u.user_id }}/{{ s.skill_id }}" class="inline"><button class="ghost">Endorse</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="4" class="empty">No skills listed yet.</td></tr>{% endfor %}
+</table>
+<p class="muted">Trust score weights each endorsement: faculty 3, alumni 2, others 1, plus 1 if the endorser lists the same skill.</p>
+</div>
+
+<h2>Connections</h2>
+<div class="box">
+  {% for f in friends %}<a href="/profile/{{ f.user_id }}">{{ f.name }}</a>{{ ', ' if not loop.last }}{% else %}<span class="empty">No connections yet.</span>{% endfor %}
+</div>
+{% endblock %}

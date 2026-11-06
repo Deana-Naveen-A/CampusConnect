@@ -1,0 +1,32 @@
+# Run in redis-cli, logical DB 1:   redis-cli -n 1      (Docker: docker exec -it cc-redis redis-cli -n 1)
+
+# R1. Top 5 most-liked posts (sorted set: member = post_id, score = like count)
+ZREVRANGE lb:posts:likes 0 4 WITHSCORES
+HGET post:<post_id> content            # then look up the text of a post from the result
+
+# R2. Trending hashtags (sorted set: member = tag, score = number of posts)
+ZREVRANGE tags:trending 0 4 WITHSCORES
+
+# R3. Most active commenters (sorted set: member = user_id, score = comments written)
+ZREVRANGE lb:commenters 0 4 WITHSCORES
+
+# R4. Unread messages per user (sorted set: member = user_id, score = unread count)
+ZREVRANGE lb:unread 0 -1 WITHSCORES
+
+# R5. Unseen notifications for user 10, newest first
+ZREVRANGE notif:10:unseen 0 -1 WITHSCORES
+
+# ---- Inspecting one post (shows the data structures)
+HGETALL post:1                  # hash: user_id, content, created_at
+SMEMBERS post:1:likes           # set of user_ids who liked
+SCARD post:1:likes              # like count
+LRANGE post:1:comments 0 -1     # list of JSON comments
+SMEMBERS tag:placements         # all post ids with a hashtag
+
+# ---- Hybrid feed building block: latest posts from users 1, 3 and 11 (their connections)
+ZUNIONSTORE tmp:feed 3 user:1:posts user:3:posts user:11:posts AGGREGATE MAX
+ZREVRANGE tmp:feed 0 4
+DEL tmp:feed
+
+# ---- Recovery: wipe and re-seed
+FLUSHDB                         # then run:  python seed_redis.py
